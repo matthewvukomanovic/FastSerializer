@@ -882,11 +882,36 @@ namespace Framework.Serialization
 			}
 		}
 
-		/// <summary>
-		/// Returns a Char[] from the stream.
-		/// </summary>
-		/// <returns>A Char[] value; or null.</returns>
-		public char[] ReadCharArray()
+        public T[] ReadOwnedArray<T>() where T : IOwnedDataSerializable
+        {
+            switch (ReadTypeCode())
+            {
+                case SerializedType.NullType: return null;
+                case SerializedType.EmptyTypedArrayType: return new T[0];
+
+                default: return ReadOwnedArrayInternal<T>();
+            }
+        }
+
+	    T[] ReadOwnedArrayInternal<T>() where T : IOwnedDataSerializable
+	    {
+
+            var result = new T[ReadOptimizedInt32()];
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                result[i] = Activator.CreateInstance<T>();;
+                ReadOwnedData(result[i], null); 
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a Char[] from the stream.
+        /// </summary>
+        /// <returns>A Char[] value; or null.</returns>
+        public char[] ReadCharArray()
 		{
 			switch (ReadTypeCode())
 			{
@@ -1399,13 +1424,230 @@ namespace Framework.Serialization
 			return ReadUInt64Array();
 		}
 
-		/// <summary>
-		/// Allows an existing object, implementing IOwnedDataSerializable, to 
-		/// retrieve its owned data from the stream.
-		/// </summary>
-		/// <param name="target">Any IOwnedDataSerializable object.</param>
-		/// <param name="context">An optional, arbitrary object to allow context to be provided.</param>
-		public void ReadOwnedData(IOwnedDataSerializable target, object context)
+        /// <summary>
+        /// Writes a TimeSpan[] into the stream.
+        /// Notes:
+        /// A null or empty array will take 1 byte.
+        /// </summary>
+        /// <param name="values">The TimeSpan[] to store.</param>
+        public Tuple<T1, T2>[] ReadTupleArray<T1, T2>()
+        {
+            var typeCode = ReadTypeCode();
+
+            switch (typeCode)
+            {
+                case SerializedType.NullType: return null;
+                case SerializedType.EmptyTypedArrayType: return new Tuple<T1, T2>[0];
+
+                default:
+                    //var optimizeFlags = ReadTypedArrayOptimizeFlags(typeCode);
+                    var result = new Tuple<T1, T2>[ReadOptimizedInt64()];
+
+                    var t1ReadMethod = (Func<T1>)GetTypeReadMethod(typeof(T1));
+                    var t2ReadMethod = (Func<T2>)GetTypeReadMethod(typeof(T2));
+
+                    for (var i = 0; i < result.Length; i++)
+                    {
+                       // if ((optimizeFlags == null) || ((optimizeFlags != FullyOptimizableTypedArray) && !optimizeFlags[i]))
+                        {
+                            result[i] = new Tuple<T1, T2>(t1ReadMethod(), t2ReadMethod());
+                        }
+                        //else
+                        //{
+                        //    result[i] = ReadOptimizedUInt64();
+                        //}
+                    }
+
+                    return result;
+            }
+        }
+
+        public Tuple<T1, T2, T3>[] ReadTupleArray<T1, T2, T3>()
+        {
+            var typeCode = ReadTypeCode();
+
+            switch (typeCode)
+            {
+                case SerializedType.NullType: return null;
+                case SerializedType.EmptyTypedArrayType: return new Tuple<T1, T2, T3>[0];
+
+                default:
+                    //var optimizeFlags = ReadTypedArrayOptimizeFlags(typeCode);
+                    var result = new Tuple<T1, T2, T3>[ReadOptimizedInt64()];
+
+                    var t1ReadMethod = (Func<T1>)GetTypeReadMethod(typeof(T1));
+                    var t2ReadMethod = (Func<T2>)GetTypeReadMethod(typeof(T2));
+                    var t3ReadMethod = (Func<T3>)GetTypeReadMethod(typeof(T3));
+
+                    for (var i = 0; i < result.Length; i++)
+                    {
+                        // if ((optimizeFlags == null) || ((optimizeFlags != FullyOptimizableTypedArray) && !optimizeFlags[i]))
+                        {
+                            result[i] = new Tuple<T1, T2, T3>(t1ReadMethod(), t2ReadMethod(), t3ReadMethod());
+                        }
+                        //else
+                        //{
+                        //    result[i] = ReadOptimizedUInt64();
+                        //}
+                    }
+
+                    return result;
+            }
+        }
+
+        private object GetTypeReadMethod(Type type)
+	    {
+            if (type == typeof(string))
+            {
+                return (Func<string>)ReadString;
+            }
+            if (type == typeof(Int32))
+            {
+                return (Func<Int32>)ReadInt32;
+            }
+            if (type == typeof(Boolean))
+            {
+                return (Func<Boolean>)ReadBoolean;
+            }
+            if (type == typeof(Decimal))
+            {
+                return (Func<Decimal>)ReadDecimal;
+            }
+            if (type == typeof(DateTime))
+            {
+                return (Func<DateTime>)ReadDateTime;
+            }
+            if (type == typeof(Double))
+            {
+                return (Func<Double>)ReadDouble;
+            }
+            if (type == typeof(Single))
+            {
+                return (Func<Single>)ReadSingle;
+            }
+            if (type == typeof(Int16))
+            {
+                return (Func<Int16>)ReadInt16;
+            }
+            if (type == typeof(Guid))
+            {
+                return (Func<Guid>)ReadGuid;
+            }
+            if (type == typeof(Int64))
+            {
+                return (Func<Int64>)ReadInt64;
+            }
+            if (type == typeof(Byte))
+            {
+                return (Func<Byte>)ReadByte;
+            }
+            if (type == typeof(Char))
+            {
+                return (Func<Char>)ReadChar;
+            }
+            if (type == typeof(SByte))
+            {
+                return (Func<SByte>)ReadSByte;
+            }
+            if (type == typeof(UInt32))
+            {
+                return (Func<UInt32>)ReadUInt32;
+            }
+            if (type == typeof(UInt16))
+            {
+                return (Func<UInt16>)ReadUInt16;
+            }
+            if (type == typeof(UInt64))
+            {
+                return (Func<UInt64>)ReadUInt64;
+            }
+            if (type == typeof(TimeSpan))
+            {
+                return (Func<TimeSpan>)ReadTimeSpan;
+            }
+            throw new Exception("Needs to be a simple type to be used in a generic sense");
+        }
+
+        private object GetTypeReadOptomizedMethod(Type type)
+        {
+            if (type == typeof(string))
+            {
+                return (Func<string>)ReadOptimizedString;
+            }
+            if (type == typeof(Int32))
+            {
+                return (Func<Int32>)ReadOptimizedInt32;
+            }
+            if (type == typeof(Boolean))
+            {
+                return (Func<Boolean>)ReadBoolean;
+            }
+            if (type == typeof(Decimal))
+            {
+                return (Func<Decimal>)ReadOptimizedDecimal;
+            }
+            if (type == typeof(DateTime))
+            {
+                return (Func<DateTime>)ReadOptimizedDateTime;
+            }
+            if (type == typeof(Double))
+            {
+                return (Func<Double>)ReadDouble;
+            }
+            if (type == typeof(Single))
+            {
+                return (Func<Single>)ReadSingle;
+            }
+            if (type == typeof(Int16))
+            {
+                return (Func<Int16>)ReadOptimizedInt16;
+            }
+            if (type == typeof(Guid))
+            {
+                return (Func<Guid>)ReadGuid;
+            }
+            if (type == typeof(Int64))
+            {
+                return (Func<Int64>)ReadOptimizedInt64;
+            }
+            if (type == typeof(Byte))
+            {
+                return (Func<Byte>)ReadByte;
+            }
+            if (type == typeof(Char))
+            {
+                return (Func<Char>)ReadChar;
+            }
+            if (type == typeof(SByte))
+            {
+                return (Func<SByte>)ReadSByte;
+            }
+            if (type == typeof(UInt32))
+            {
+                return (Func<UInt32>)ReadOptimizedUInt32;
+            }
+            if (type == typeof(UInt16))
+            {
+                return (Func<UInt16>)ReadOptimizedUInt16;
+            }
+            if (type == typeof(UInt64))
+            {
+                return (Func<UInt64>)ReadOptimizedUInt64;
+            }
+            if (type == typeof(TimeSpan))
+            {
+                return (Func<TimeSpan>)ReadOptimizedTimeSpan;
+            }
+            throw new Exception("Needs to be a simple type to be used in a generic sense");
+        }
+
+        /// <summary>
+        /// Allows an existing object, implementing IOwnedDataSerializable, to 
+        /// retrieve its owned data from the stream.
+        /// </summary>
+        /// <param name="target">Any IOwnedDataSerializable object.</param>
+        /// <param name="context">An optional, arbitrary object to allow context to be provided.</param>
+        public void ReadOwnedData(IOwnedDataSerializable target, object context)
 		{
 			target.DeserializeOwnedData(this, context);
 		}

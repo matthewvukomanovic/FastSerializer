@@ -1391,13 +1391,260 @@ namespace Framework.Serialization
 			}
 		}
 
-		/// <summary>
-		/// Writes a UInt32[] into the stream.
-		/// Notes:
-		/// A null or empty array will take 1 byte.
-		/// </summary>
-		/// <param name="values">The UInt32[] to store.</param>
-		[CLSCompliant(false)]
+        /// <summary>
+        /// Writes a TimeSpan[] into the stream.
+        /// Notes:
+        /// A null or empty array will take 1 byte.
+        /// </summary>
+        /// <param name="values">The TimeSpan[] to store.</param>
+        public void Write<T1,T2>(Tuple<T1,T2>[] values)
+        {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Length == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteArray(values, null);
+            }
+        }
+
+        /// <summary>
+        /// Writes a TimeSpan[] into the stream.
+        /// Notes:
+        /// A null or empty array will take 1 byte.
+        /// </summary>
+        /// <param name="values">The TimeSpan[] to store.</param>
+        public void Write<T1, T2,T3>(Tuple<T1, T2, T3>[] values)
+        {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Length == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteArray(values, null);
+            }
+        }
+
+        void WriteArray<T1, T2>(Tuple<T1, T2>[] values, BitArray optimizeFlags)
+        {
+            var t1WriteMethod  = (Action<T1>)GetTypeWriteMethod(typeof(T1));
+            var t2WriteMethod = (Action<T2>)GetTypeWriteMethod(typeof(T2));
+
+            var t1WriteMethodOptimized = (optimizeFlags == null) ?  null :  (Action<T1>)GetTypeWriteOptimizedMethod(typeof(T1));
+            var t2WriteMethodOptimized = (optimizeFlags == null) ? null : (Action<T2>)GetTypeWriteOptimizedMethod(typeof(T2));
+
+            WriteTypedArrayTypeCode(optimizeFlags, values.Length);
+
+            for (var i = 0; i < values.Length; i++)
+            {
+                var value = values[i];
+                if ((optimizeFlags == null) || ((optimizeFlags != FullyOptimizableTypedArray) && !optimizeFlags[i]))
+                {
+                    t1WriteMethod(value.Item1);
+                    t2WriteMethod(value.Item2);
+                }
+                else
+                {
+                    t1WriteMethodOptimized(value.Item1);
+                    t2WriteMethodOptimized(value.Item2);
+                }
+            }
+        }
+
+        void WriteArray<T1, T2, T3>(Tuple<T1, T2, T3>[] values, BitArray optimizeFlags)
+        {
+            var t1WriteMethod = (Action<T1>)GetTypeWriteMethod(typeof(T1));
+            var t2WriteMethod = (Action<T2>)GetTypeWriteMethod(typeof(T2));
+            var t3WriteMethod = (Action<T3>)GetTypeWriteMethod(typeof(T3));
+
+            var t1WriteMethodOptimized = (optimizeFlags == null) ? null : (Action<T1>)GetTypeWriteOptimizedMethod(typeof(T1));
+            var t2WriteMethodOptimized = (optimizeFlags == null) ? null : (Action<T2>)GetTypeWriteOptimizedMethod(typeof(T2));
+            var t3WriteMethodOptimized = (optimizeFlags == null) ? null : (Action<T3>)GetTypeWriteOptimizedMethod(typeof(T3));
+
+            WriteTypedArrayTypeCode(optimizeFlags, values.Length);
+
+            for (var i = 0; i < values.Length; i++)
+            {
+                var value = values[i];
+                if ((optimizeFlags == null) || ((optimizeFlags != FullyOptimizableTypedArray) && !optimizeFlags[i]))
+                {
+                    t1WriteMethod(value.Item1);
+                    t2WriteMethod(value.Item2);
+                    t3WriteMethod(value.Item3);
+                }
+                else
+                {
+                    t1WriteMethodOptimized(value.Item1);
+                    t2WriteMethodOptimized(value.Item2);
+                    t3WriteMethodOptimized(value.Item3);
+                }
+            }
+        }
+
+        private object GetTypeWriteOptimizedMethod(Type type)
+	    {
+            if (type == typeof(Int32))
+            {
+                return (Action<Int32>)WriteOptimized;
+            }
+            if (type == typeof(string))
+	        {
+	            return (Action<string>)WriteOptimized;
+	        }
+	        if (type == typeof(Boolean))
+	        {
+	            return (Action<Boolean>)Write;
+	        }
+	        if (type == typeof(Decimal))
+	        {
+	            return (Action<Decimal>)WriteOptimized;
+	        }
+	        if (type == typeof(DateTime))
+	        {
+	            return (Action<DateTime>)WriteOptimized;
+	        }
+	        if (type == typeof(Double))
+	        {
+	            return (Action<Double>)Write;
+	        }
+	        if (type == typeof(Single))
+	        {
+	            return (Action<Single>)Write;
+	        }
+	        if (type == typeof(Int16))
+	        {
+	            return (Action<Int16>)WriteOptimized;
+	        }
+	        if (type == typeof(Guid))
+	        {
+	            return (Action<Guid>)Write;
+	        }
+	        if (type == typeof(Int64))
+	        {
+	            return (Action<Int64>)WriteOptimized;
+	        }
+	        if (type == typeof(Byte))
+	        {
+	            return (Action<Byte>)Write;
+	        }
+	        if (type == typeof(Char))
+	        {
+	            return (Action<Char>)Write;
+	        }
+	        if (type == typeof(SByte))
+	        {
+	            return (Action<SByte>)Write;
+	        }
+	        if (type == typeof(UInt32))
+	        {
+	            return (Action<UInt32>)WriteOptimized;
+	        }
+	        if (type == typeof(UInt16))
+	        {
+	            return (Action<UInt16>)WriteOptimized;
+	        }
+	        if (type == typeof(UInt64))
+	        {
+	            return (Action<UInt64>)WriteOptimized;
+	        }
+	        if (type == typeof(TimeSpan))
+	        {
+	            return (Action<TimeSpan>)WriteOptimized;
+	        }
+            throw new Exception("Needs to be a simple type to be used in a generic sense");
+	    }
+
+	    private object GetTypeWriteMethod(Type type)
+	    {
+            if (type == typeof(Int32))
+            {
+                return (Action<Int32>)Write;
+            }
+            if (type == typeof(string))
+            {
+                return (Action<string>)Write;
+            }
+            if (type == typeof(Boolean))
+            {
+                return (Action<Boolean>)Write;
+            }
+            if (type == typeof(Decimal))
+            {
+                return (Action<Decimal>)Write;
+            }
+            if (type == typeof(DateTime))
+            {
+                return (Action<DateTime>)Write;
+            }
+            if (type == typeof(Double))
+            {
+                return (Action<Double>)Write;
+            }
+            if (type == typeof(Single))
+            {
+                return (Action<Single>)Write;
+            }
+            if (type == typeof(Int16))
+            {
+                return (Action<Int16>)Write;
+            }
+            if (type == typeof(Guid))
+            {
+                return (Action<Guid>)Write;
+            }
+            if (type == typeof(Int64))
+            {
+                return (Action<Int64>)Write;
+            }
+            if (type == typeof(Byte))
+            {
+                return (Action<Byte>)Write;
+            }
+            if (type == typeof(Char))
+            {
+                return (Action<Char>)Write;
+            }
+            if (type == typeof(SByte))
+            {
+                return (Action<SByte>)Write;
+            }
+            if (type == typeof(UInt32))
+            {
+                return (Action<UInt32>)Write;
+            }
+            if (type == typeof(UInt16))
+            {
+                return (Action<UInt16>)Write;
+            }
+            if (type == typeof(UInt64))
+            {
+                return (Action<UInt64>)Write;
+            }
+            if (type == typeof(TimeSpan))
+            {
+                return (Action<TimeSpan>)Write;
+            }
+
+            throw new Exception("Needs to be a simple type to be used in a generic sense");
+        }
+
+        /// <summary>
+        /// Writes a UInt32[] into the stream.
+        /// Notes:
+        /// A null or empty array will take 1 byte.
+        /// </summary>
+        /// <param name="values">The UInt32[] to store.</param>
+        [CLSCompliant(false)]
 		public void Write(uint[] values)
 		{
 			if (values == null)
@@ -2866,19 +3113,41 @@ namespace Framework.Serialization
 			}
 		}
 
-		
-		/// <summary>
-		/// Stores the specified SerializedType code into the stream.
-		/// 
-		/// By using a centralized method, it is possible to collect statistics for the
-		/// type of data being stored in DEBUG mode.
-		/// 
-		/// Use the DumpTypeUsage() method to show a list of used SerializedTypes and
-		/// the number of times each has been used. This method and the collection code
-		/// will be optimized out when compiling in Release mode.
-		/// </summary>
-		/// <param name="typeCode">The SerializedType to store.</param>
-		void WriteTypeCode(SerializedType typeCode)
+	    public void WriteOwnedArray<T>(T[] values) where T : IOwnedDataSerializable
+	    {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Length == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteTypeCode(SerializedType.NonOptimizedTypedArrayType);
+
+                Write7BitEncodedSigned32BitValue(values.Length);
+
+                foreach (var value in values)
+                {
+                    Write(value, values);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stores the specified SerializedType code into the stream.
+        /// 
+        /// By using a centralized method, it is possible to collect statistics for the
+        /// type of data being stored in DEBUG mode.
+        /// 
+        /// Use the DumpTypeUsage() method to show a list of used SerializedTypes and
+        /// the number of times each has been used. This method and the collection code
+        /// will be optimized out when compiling in Release mode.
+        /// </summary>
+        /// <param name="typeCode">The SerializedType to store.</param>
+        void WriteTypeCode(SerializedType typeCode)
 		{
 			Write((byte) typeCode);
 #if DEBUG
