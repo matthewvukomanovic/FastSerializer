@@ -333,6 +333,29 @@ namespace Framework.Serialization
 			target.SerializeOwnedData(this, context);
 		}
 
+        /// <summary>
+        /// Allows any object implementing IOwnedDataSerializable to serialize itself
+        /// into this SerializationWriter.
+        /// A context may also be used to give the object an indication of what data
+        /// to store. As an example, using a BitVector32 gives a list of flags and
+        /// the object can conditionally store data depending on those flags.
+        /// </summary>
+        /// <param name="target">The IOwnedDataSerializable object to ask for owned data</param>
+        /// <param name="context">An arbtritrary object but BitVector32 recommended</param>
+        public void WriteNullableOwnedObject<T>(T target, object context = null) where T : class, IOwnedDataSerializable
+        {
+            if (target == null)
+            {
+                Write(false);
+            }
+            else
+            {
+                Write(true);
+                target.SerializeOwnedData(this, context);
+            }
+        }
+
+
         public override void Write(string value)
         {
             var bytes = _enc.GetBytes(value);

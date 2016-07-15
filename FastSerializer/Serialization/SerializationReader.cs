@@ -1652,11 +1652,51 @@ namespace Framework.Serialization
 			target.DeserializeOwnedData(this, context);
 		}
 
-		/// <summary>
-		/// Returns the object associated with the object token read next from the stream.
-		/// </summary>
-		/// <returns>An object.</returns>
-		public object ReadTokenizedObject()
+        public T ReadOwnedData<T>(object context) where T : IOwnedDataSerializableAndRecreatable
+        {
+            //var type = (SerializedType) ReadByte();
+            //if (type == SerializedType.NullType)
+            //{
+            //    return default(T);
+            //}
+
+            var target = Activator.CreateInstance<T>();
+
+            target.DeserializeOwnedData(this, context);
+            return target;
+        }
+
+        public T ReadNullableOwnedData<T>(object context = null) where T : IOwnedDataSerializableAndRecreatable
+        {
+            var hasValue = ReadBoolean();
+            if (!hasValue)
+            {
+                return default(T);
+            }
+
+            var target = Activator.CreateInstance<T>();
+
+            target.DeserializeOwnedData(this, context);
+            return target;
+        }
+
+        public T ReadNullableOwnedDataInitialised<T>(T target, object context = null) where T : IOwnedDataSerializableAndRecreatable
+        {
+            var hasValue = ReadBoolean();
+            if (!hasValue)
+            {
+                return default(T);
+            }
+
+            target.DeserializeOwnedData(this, context);
+            return target;
+        }
+
+        /// <summary>
+        /// Returns the object associated with the object token read next from the stream.
+        /// </summary>
+        /// <returns>An object.</returns>
+        public object ReadTokenizedObject()
 		{
 			var token = ReadOptimizedInt32();
 
