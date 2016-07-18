@@ -1465,6 +1465,39 @@ namespace Framework.Serialization
             return targetList;
         }
 
+        public List<Exception> ReadSimplifiedExceptionList()
+        {
+            List<Exception> list;
+            if (!ReadBoolean())
+            {
+                return null;
+            }
+
+            var count = Read7BitEncodedInt();
+
+            list = new List<Exception>(count);
+            for (int i = 0; i < count; i++)
+            {
+                foreach (var rejectedRequestException in list)
+                {
+                    list.Add(ReadSimplifiedException());
+                }
+            }
+            return list;
+        }
+
+        public Exception ReadSimplifiedException()
+        {
+            var originalName = ReadString();
+            var message = ReadNullableString();
+
+            if (message == null)
+            {
+                return new Exception("Original Exception Type:" + originalName);
+            }
+            return new Exception(message + "\r\nOriginal Exception Type:" + originalName);
+        }
+
         public List<Tuple<T1, T2>> ReadTupleList<T1, T2>()
 	    {
 	        var array = ReadTupleArray<T1, T2>();

@@ -3242,6 +3242,29 @@ namespace Framework.Serialization
             }
         }
 
+	    public void WriteSimplifiedException(List<Exception> list)
+	    {
+            if (list != null)
+            {
+                Write(true);
+                Write7BitEncodedSigned32BitValue(list.Count);
+                foreach (var rejectedRequestException in list)
+                {
+                    WriteSimplifiedException(rejectedRequestException);
+                }
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+
+	    public void WriteSimplifiedException(Exception e)
+	    {
+            Write(e.GetType().FullName);
+            WriteNullable(e.Message);
+        }
+
         /// <summary>
         /// Stores the specified SerializedType code into the stream.
         /// 
