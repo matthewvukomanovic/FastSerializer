@@ -706,8 +706,13 @@ namespace Framework.Serialization
 		/// <returns>A new generic List.</returns>
 		public List<T> ReadList<T>()
 		{
-			return new List<T>((T[]) ProcessArrayTypes(ReadTypeCode(), typeof(T)));
-		}
+		    var array = (T[]) ProcessArrayTypes(ReadTypeCode(), typeof(T));
+		    if (array == null)
+		    {
+		        return null;
+		    }
+            return new List<T>(array);
+        }
 		
 		/// <summary>
 		/// Returns a Nullable struct from the stream.
@@ -1423,6 +1428,46 @@ namespace Framework.Serialization
 		{
 			return ReadUInt64Array();
 		}
+
+        public List<T> ReadNullableOwnedList<T>(object context = null) where T : class, IOwnedDataSerializable
+        {
+            var typecode = ReadTypeCode();
+            switch (typecode)
+            {
+                case SerializedType.NullType:
+                    return null;
+                case SerializedType.EmptyTypedArrayType:
+                    return new List<T>();
+                case SerializedType.NonOptimizedTypedArrayType:
+                    break;
+                default:
+                    throw new InvalidOperationException("Unrecognized TypeCode");
+            }
+
+            var count = Read7BitEncodedInt();
+
+            var targetList = new List<T>(count);
+
+
+            for (int index = 0; index < count; index++)
+            {
+                var target = Activator.CreateInstance<T>();
+                target.DeserializeOwnedData(this, context);
+                targetList.Add(target);
+            }
+
+            return targetList;
+        }
+
+        public List<Tuple<T1, T2>> ReadTupleList<T1, T2>()
+	    {
+	        var array = ReadTupleArray<T1, T2>();
+	        if (array == null)
+	        {
+	            return null;
+            }
+            return new List<Tuple<T1, T2>>(array);
+	    }
 
         /// <summary>
         /// Writes a TimeSpan[] into the stream.

@@ -355,6 +355,30 @@ namespace Framework.Serialization
             }
         }
 
+	    public void WriteNullableOwnedList<T>(List<T> values, object context = null) where T : class, IOwnedDataSerializable
+	    {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Count == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteTypeCode(SerializedType.NonOptimizedTypedArrayType);
+
+                var count = values.Count;
+
+                Write7BitEncodedSigned32BitValue(count);
+
+                for (int index = 0; index < count; index++)
+                {
+                    values[index].SerializeOwnedData(this, null);
+                }
+            }
+        }
 
         public override void Write(string value)
         {
@@ -1420,6 +1444,28 @@ namespace Framework.Serialization
         /// A null or empty array will take 1 byte.
         /// </summary>
         /// <param name="values">The TimeSpan[] to store.</param>
+        public void Write<T1, T2>(List<Tuple<T1, T2>> values)
+        {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Count == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteArray(values.ToArray(), null);
+            }
+        }
+
+        /// <summary>
+        /// Writes a TimeSpan[] into the stream.
+        /// Notes:
+        /// A null or empty array will take 1 byte.
+        /// </summary>
+        /// <param name="values">The TimeSpan[] to store.</param>
         public void Write<T1,T2>(Tuple<T1,T2>[] values)
         {
             if (values == null)
@@ -1844,7 +1890,6 @@ namespace Framework.Serialization
 			WriteObjectArray(values);
 		}
 
-		
 		/// <summary>
 		/// Writes a pair of object[] arrays into the stream using the fewest number of bytes possible.
 		/// The arrays must not be null and must have the same length
@@ -2303,7 +2348,6 @@ namespace Framework.Serialization
 				WriteArray(values, optimizeFlags);
 			}
 		}
-
 		
 		/// <summary>
 		/// Writes a Nullable type into the stream.
@@ -2353,8 +2397,19 @@ namespace Framework.Serialization
 		/// <param name="value">The generic List.</param>
 		public void Write<T>(List<T> value)
 		{
-			WriteTypedArray(value.ToArray(), false);
-		}
+		    if (value == null)
+		    {
+		        WriteTypeCode(SerializedType.NullType);
+		    }
+            else if (value.Count == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+		    {
+                WriteTypedArray(value.ToArray(), false);
+            }
+        }
 
 		/// <summary>
 		/// Writes a null or a typed array into the stream.
