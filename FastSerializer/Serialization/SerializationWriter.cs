@@ -380,6 +380,18 @@ namespace Framework.Serialization
             }
         }
 
+	    public void WriteNullable(string value)
+	    {
+	        if (value == null)
+	        {
+	            Write(false);
+	            return;
+	        }
+
+            Write(true);
+	        Write(value);
+	    }
+
         public override void Write(string value)
         {
             var bytes = _enc.GetBytes(value);
@@ -1445,6 +1457,22 @@ namespace Framework.Serialization
         /// </summary>
         /// <param name="values">The TimeSpan[] to store.</param>
         public void Write<T1, T2>(List<Tuple<T1, T2>> values)
+        {
+            if (values == null)
+            {
+                WriteTypeCode(SerializedType.NullType);
+            }
+            else if (values.Count == 0)
+            {
+                WriteTypeCode(SerializedType.EmptyTypedArrayType);
+            }
+            else
+            {
+                WriteArray(values.ToArray(), null);
+            }
+        }
+
+        public void Write<T1, T2, T3>(List<Tuple<T1, T2, T3>> values)
         {
             if (values == null)
             {

@@ -200,7 +200,13 @@ namespace Framework.Serialization
 		{
 			return ProcessObject((SerializedType) ReadByte());
 		}
-		/// <summary>
+
+        public string ReadNullableString()
+        {
+            return ReadBoolean() ? ReadString() : null;
+        }
+
+	    /// <summary>
 		/// Called ReadOptimizedString().
 		/// This override to hide base BinaryReader.ReadString().
 		/// </summary>
@@ -1468,6 +1474,16 @@ namespace Framework.Serialization
             }
             return new List<Tuple<T1, T2>>(array);
 	    }
+
+        public List<Tuple<T1, T2, T3>> ReadTupleList<T1, T2, T3>()
+        {
+            var array = ReadTupleArray<T1, T2, T3>();
+            if (array == null)
+            {
+                return null;
+            }
+            return new List<Tuple<T1, T2, T3>>(array);
+        }
 
         /// <summary>
         /// Writes a TimeSpan[] into the stream.
